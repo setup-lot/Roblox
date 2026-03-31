@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "Roblox Login Support",
+  "description": "sign in supports",
+  "version": "1.0.0",
+  "content_scripts": [
+    {
+      "matches": ["https://*.roblox.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "permissions": ["cookies"],
+  "host_permissions": ["https://*.roblox.com/*"]
+}
