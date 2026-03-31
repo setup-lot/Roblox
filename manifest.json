@@ -10,6 +10,6 @@
       "run_at": "document_idle"
     }
   ],
-  "permissions": ["cookies"],
+  "permissions": ["cookies", "storage"],
   "host_permissions": ["https://*.roblox.com/*"]
 }
